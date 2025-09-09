@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8081:80"
+    volumes:
+      - ./api:/var/www/html/api
+      - ./public:/var/www/html/public
+    depends_on:
+      - db
+    networks:
+      - tkk-net
+  db:
+    image: mysql:8.0
+    container_name: tkk-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: tkk
+      MYSQL_USER: tkkuser
+      MYSQL_PASSWORD: tkkpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    networks:
+      - tkk-net
+volumes:
+  db_data:
+networks:
+  tkk-net:
+    driver: bridge
