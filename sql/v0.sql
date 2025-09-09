@@ -42,3 +42,9 @@ INSERT INTO controls (name, description, km_point, status, open_time, close_time
 ('Avituallamiento 1', 'Primer avituallamiento con agua y fruta', 20.00, 'no-preparado', NULL, NULL, 'Josep Massana', '+34600112233', 41.250123, 1.560456),
 ('Avituallamiento 2', 'Segundo avituallamiento', 40.00, 'no-preparado', NULL, NULL, 'Rubén Fernández', '+34600998877', 41.275678, 1.580234),
 ('Meta', 'Llegada y entrega de obsequios', 74.00, 'no-preparado', NULL, NULL, 'Àngels Rebollo', '+34600665544', 41.300345, 1.600678);
+
+-- Participantes de prueba
+INSERT INTO participants (name, dorsal, status) VALUES
+('Dev Ana', 101, 'active'),
+('Dev Juan', 102, 'abandoned'),
+('Dev Marta', 103, 'active');

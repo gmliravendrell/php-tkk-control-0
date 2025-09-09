@@ -18,15 +18,14 @@ try {
     $stmt->execute();
     $p = $stmt->get_result()->fetch_assoc();
     if (!$p) throw new Exception("Participante no encontrado");
-    if ($p['status'] !== 'active') throw new Exception("Participante no activo");
+    if ($p['status'] === 'abandoned') throw new Exception("Participante ya abandonado");
 
-    // comprobar si ya ha hecho checkin
-    $stmt = $conn->prepare("SELECT 1 FROM checkins WHERE participant_id=? AND control_id=?");
-    $stmt->bind_param("ii",$p['id'],$control_id);
+    // marcar como abandonado
+    $stmt = $conn->prepare("UPDATE participants SET status='abandoned' WHERE id=?");
+    $stmt->bind_param("i",$p['id']);
     $stmt->execute();
-    if ($stmt->get_result()->num_rows) throw new Exception("Participante ya marcado");
 
-    // insertar checkin
+    // opcional: crear checkin de control para registro
     $stmt = $conn->prepare("INSERT INTO checkins(participant_id, control_id) VALUES(?,?)");
     $stmt->bind_param("ii",$p['id'],$control_id);
     $stmt->execute();

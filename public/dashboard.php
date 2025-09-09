@@ -4,37 +4,73 @@
   <meta charset="utf-8">
   <title>TKK Dashboard</title>
   <style>
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: .5rem; }
+    body { font-family: sans-serif; padding: 1rem; background: #f5f5f5; }
+    h1 { text-align: center; margin-bottom: 2rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 0.8rem;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    th { background: #007bff; color: #fff; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .status { font-weight: bold; }
+    .abierto { color: green; }
+    .cerrado { color: red; }
+    .no-preparado { color: gray; }
   </style>
 </head>
 <body>
-  <h1>📊 Dashboard TKK</h1>
-  <table>
+  <h1>📊 Dashboard de Controles</h1>
+
+  <table id="controls">
     <thead>
-      <tr><th>Dorsal</th><th>Nombre</th><th>Status</th><th>Controles pasados</th></tr>
+      <tr>
+        <th>Control</th>
+        <th>Estado</th>
+        <th>Hora cierre</th>
+        <th>Pasados</th>
+        <th>Faltan</th>
+        <th>Abandonos</th>
+      </tr>
     </thead>
-    <tbody id="tbl"></tbody>
+    <tbody></tbody>
   </table>
 
   <script>
-    async function refresh() {
-      const res = await fetch("../api/dashboard.php");
+    async function loadDashboard() {
+      const res = await fetch("api/dashboard.php");
       const data = await res.json();
-      const tbl = document.getElementById("tbl");
-      tbl.innerHTML = "";
-      data.forEach(p => {
-        tbl.innerHTML += `
-          <tr>
-            <td>${p.dorsal}</td>
-            <td>${p.name}</td>
-            <td>${p.status}</td>
-            <td>${p.passed_controls || "-"}</td>
-          </tr>`;
+
+      const tbody = document.querySelector("#controls tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(c => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${c.name}</td>
+          <td class="status ${c.status}">${c.status}</td>
+          <td>${c.close_time ?? "-"}</td>
+          <td>${c.passed}</td>
+          <td>${c.missing}</td>
+          <td>${c.abandoned}</td>
+        `;
+
+        tbody.appendChild(tr);
       });
     }
-    setInterval(refresh, 5000); // refresca cada 5s
-    refresh();
+
+    // refrescar cada 10s
+    loadDashboard();
+    setInterval(loadDashboard, 10000);
   </script>
 </body>
 </html>
