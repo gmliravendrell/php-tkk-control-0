@@ -18,8 +18,10 @@
     <div id="controlActions" class="mt-4 space-y-2">
         <!-- Los botones se inyectarán aquí vía JS -->
     </div>
-
-    <a href="{{ route('control.index') }}" class="inline-block mt-4 text-blue-600 hover:underline">⬅ Back to controls</a>
+    <a href="{{ route('scanner.index', $control->id) }}" class="btn btn-secondary">
+        📷 Escanear QR
+    </a>
+    <a href="{{ route('control.index') }}" class="inline-block mt-4 text-blue-600 hover:underline">⬅ Cambiar de Control</a>
 </div>
 
 <script>
@@ -53,7 +55,6 @@ async function updateControlStatus(newStatus) {
     const data = await res.json();
     if(res.ok) {
         alert('Estado actualizado con éxito');
-        location.reload();
     } else {
         alert(data.message || 'Error al actualizar estado');
     }

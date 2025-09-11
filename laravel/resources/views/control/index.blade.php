@@ -11,7 +11,7 @@
 <body>
     <h1>📍 Select Control</h1>
 
-    <label for="controlSelect">Choose a control:</label>
+    <label for="controlSelect">Selecciona un control</label>
     <select id="controlSelect">
         <option value="">-- Select --</option>
         @foreach($controls as $control)
@@ -19,7 +19,8 @@
         @endforeach
     </select>
 
-    <button id="goButton" disabled>Go to Control</button>
+    <button id="goButton" disabled>Ir al control seleccionado</button>
+    <a href="{{ route('home') }}" class="inline-block mt-4 text-blue-600 hover:underline">⬅ Volver al menú principal</a>
 
     <script>
         const select = document.getElementById('controlSelect');
