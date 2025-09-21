@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  db:
+  mysql:
     image: mysql:8.0
     container_name: tkk-mysql
     restart: always
@@ -17,8 +17,38 @@ services:
       - ./sql:/docker-entrypoint-initdb.d
     networks:
       - tkk-net
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel-app
+    ports:
+      - "8080:80"
+    volumes:
+    - ./laravel/storage:/var/www/html/storage
+    environment:
+      APP_ENV: local
+      APP_DEBUG: 1
+      APP_KEY: base64:PjrQBkIl1k16A7kWMuBhX6N+BOECtew94+9kOlKkCdw=
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: tkk
+      DB_USERNAME: tkkuser
+      DB_PASSWORD: tkkpass
+    networks:
+      - tkk-net
+    depends_on:
+      - mysql
+    command: >
+      sh -c "chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache &&
+            php artisan config:cache &&
+            php artisan route:cache &&
+            php artisan view:cache &&
+            apache2-foreground"
 volumes:
   db_data:
 networks:
   tkk-net:
     driver: bridge
+
