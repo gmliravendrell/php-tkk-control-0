@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Control;
 
 class DashboardController extends Controller
@@ -16,7 +15,7 @@ class DashboardController extends Controller
             },
             'checks as abandoned' => function ($query) {
                 $query->where('type', 'abandon');
-            }
+            },
         ])->get();
 
         // Calculamos los pendientes por cada control

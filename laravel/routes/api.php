@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\CheckController;
 use App\Http\Controllers\Api\ControlController;
 use App\Http\Controllers\Api\ParticipantController;
-use App\Http\Controllers\Api\CheckController;
+use Illuminate\Support\Facades\Route;
 
 Route::apiResource('controls', ControlController::class);
 Route::apiResource('participants', ParticipantController::class);

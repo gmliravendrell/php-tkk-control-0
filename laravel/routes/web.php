@@ -1,17 +1,17 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ControlController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\QrScannerController;
 use App\Http\Controllers\AdminPanelController;
 use App\Http\Controllers\CentralController;
 use App\Http\Controllers\CentralReportController;
+use App\Http\Controllers\ControlController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\QrScannerController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/dashboard', function () {
-    return "Pantalla de Dashboard (la desarrollaremos luego)";
+    return 'Pantalla de Dashboard (la desarrollaremos luego)';
 })->name('dashboard');
 Route::get('/control', [ControlController::class, 'index'])->name('control.index');
 Route::get('/control/{id}', [ControlController::class, 'show'])->name('control.show');

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ControlEvent extends Model
 {
     protected $fillable = [
-        'control_id', 'sso_user_id', 'sso_user_name', 'action'
+        'control_id', 'sso_user_id', 'sso_user_name', 'action',
     ];
 
     public function control(): BelongsTo

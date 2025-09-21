@@ -9,7 +9,7 @@ class Control extends Model
 {
     protected $fillable = [
         'name', 'km_point', 'responsible', 'phone', 'status',
-        'passed', 'missing', 'abandoned'
+        'passed', 'missing', 'abandoned',
     ];
 
     public function checks(): HasMany
@@ -28,9 +28,9 @@ class Control extends Model
     public function resetCounters(int $participantsTotal): void
     {
         $this->update([
-            'passed'    => 0,
+            'passed' => 0,
             'abandoned' => 0,
-            'missing'   => $participantsTotal,
+            'missing' => $participantsTotal,
         ]);
     }
 }

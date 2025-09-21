@@ -8,6 +8,7 @@ namespace App\Http\Controllers\Api;
  *     title="TKK Control API",
  *     description="API documentation for TKK-Control"
  * )
+ *
  * @OA\Server(
  *     url="/api",
  *     description="API server"

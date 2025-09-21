@@ -14,9 +14,7 @@
     "paths": {
         "/api/checks": {
             "post": {
-                "tags": [
-                    "Checks"
-                ],
+                "tags": ["Checks"],
                 "summary": "Register a check or dropout at a control",
                 "description": "Creates a record of passage (check) or dropout for a participant at a specific control.",
                 "operationId": "36827b3a46d057db7a74ed7237d2bec8",
@@ -44,10 +42,7 @@
                                     "type": {
                                         "description": "Type of record",
                                         "type": "string",
-                                        "enum": [
-                                            "check",
-                                            "abandon"
-                                        ],
+                                        "enum": ["check", "abandon"],
                                         "example": "check"
                                     }
                                 },
@@ -105,9 +100,7 @@
         },
         "/api/controls/{control}/checks": {
             "get": {
-                "tags": [
-                    "Checks"
-                ],
+                "tags": ["Checks"],
                 "summary": "Get participants who checked at a control",
                 "description": "Returns the list of participants who have passed a given control, ordered by timestamp descending.",
                 "operationId": "22cf1c42f426f6864e9c85aaf09909cb",
@@ -155,9 +148,7 @@
         },
         "/api/checks/abandons": {
             "get": {
-                "tags": [
-                    "Checks"
-                ],
+                "tags": ["Checks"],
                 "summary": "Get participants who abandoned",
                 "description": "Returns the list of participants who have abandoned at any control, including the control name.",
                 "operationId": "455b15712aee1978d6aa73dac65af128",
@@ -198,9 +189,7 @@
         },
         "/api/controls": {
             "get": {
-                "tags": [
-                    "Controls"
-                ],
+                "tags": ["Controls"],
                 "summary": "Get all controls",
                 "operationId": "c77f525a2a1446577d038002698a65bf",
                 "responses": {
@@ -220,9 +209,7 @@
                 }
             },
             "post": {
-                "tags": [
-                    "Controls"
-                ],
+                "tags": ["Controls"],
                 "summary": "Create a new control",
                 "operationId": "049b68992d9cbcb1ba1db2510ab39199",
                 "requestBody": {
@@ -230,10 +217,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "name",
-                                    "km_point"
-                                ],
+                                "required": ["name", "km_point"],
                                 "properties": {
                                     "name": {
                                         "type": "string",
@@ -287,9 +271,7 @@
         },
         "/api/controls/{id}": {
             "get": {
-                "tags": [
-                    "Controls"
-                ],
+                "tags": ["Controls"],
                 "summary": "Get a control by ID",
                 "operationId": "814fb0a47f987c12d3e2f7b9f0612017",
                 "parameters": [
@@ -321,9 +303,7 @@
                 }
             },
             "patch": {
-                "tags": [
-                    "Controls"
-                ],
+                "tags": ["Controls"],
                 "summary": "Update a control status",
                 "description": "Update the status of a control with allowed state transitions.",
                 "operationId": "3014109f4371432ca4cffeab11e7c709",
@@ -344,9 +324,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "status"
-                                ],
+                                "required": ["status"],
                                 "properties": {
                                     "status": {
                                         "type": "string",
@@ -387,9 +365,7 @@
         },
         "/api/admin/controls/import": {
             "post": {
-                "tags": [
-                    "Controls"
-                ],
+                "tags": ["Controls"],
                 "summary": "Import controls from CSV",
                 "description": "Upload a CSV file to import multiple controls.",
                 "operationId": "de1b593aef4a200686c9c4798fe7aef0",
@@ -398,9 +374,7 @@
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "required": [
-                                    "csv"
-                                ],
+                                "required": ["csv"],
                                 "properties": {
                                     "csv": {
                                         "description": "CSV file with controls",
@@ -441,9 +415,7 @@
         },
         "/api/participants": {
             "get": {
-                "tags": [
-                    "Participants"
-                ],
+                "tags": ["Participants"],
                 "summary": "Get all participants",
                 "operationId": "b56cc0b1479de99c053898dea57d2a59",
                 "responses": {
@@ -463,9 +435,7 @@
                 }
             },
             "post": {
-                "tags": [
-                    "Participants"
-                ],
+                "tags": ["Participants"],
                 "summary": "Create a new participant",
                 "operationId": "700a91d1e48b221e6d27eb86f50a4dc7",
                 "requestBody": {
@@ -473,10 +443,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "first_name",
-                                    "last_name"
-                                ],
+                                "required": ["first_name", "last_name"],
                                 "properties": {
                                     "first_name": {
                                         "type": "string",
@@ -541,9 +508,7 @@
         },
         "/api/participants/{id}": {
             "get": {
-                "tags": [
-                    "Participants"
-                ],
+                "tags": ["Participants"],
                 "summary": "Get a participant by ID",
                 "operationId": "022e40e8979c7d7a7f156a8c80aeaa5f",
                 "parameters": [
@@ -575,9 +540,7 @@
                 }
             },
             "put": {
-                "tags": [
-                    "Participants"
-                ],
+                "tags": ["Participants"],
                 "summary": "Update a participant",
                 "operationId": "c42492b70d7706860bae3c7f4966cfa4",
                 "parameters": [
@@ -639,9 +602,7 @@
                 }
             },
             "delete": {
-                "tags": [
-                    "Participants"
-                ],
+                "tags": ["Participants"],
                 "summary": "Delete a participant",
                 "operationId": "2a2003f3c1c8a6b6164344f3bd5085ce",
                 "parameters": [
@@ -668,9 +629,7 @@
         },
         "/api/admin/participants/import": {
             "post": {
-                "tags": [
-                    "Participants"
-                ],
+                "tags": ["Participants"],
                 "summary": "Import participants from CSV",
                 "description": "Upload a CSV file to import multiple participants. Existing checks are truncated.",
                 "operationId": "8ee236debdac3c7ead030924002d73a3",
@@ -679,9 +638,7 @@
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "required": [
-                                    "csv"
-                                ],
+                                "required": ["csv"],
                                 "properties": {
                                     "csv": {
                                         "description": "CSV file with participants",
