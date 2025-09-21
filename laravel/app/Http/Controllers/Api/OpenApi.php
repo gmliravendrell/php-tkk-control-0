@@ -1,14 +1,19 @@
 <?php
 
+namespace App\Http\Controllers\Api;
+
 /**
  * @OA\Info(
  *     version="1.0.0",
- *     title="My API",
- *     description="API documentation for my project"
+ *     title="TKK Control API",
+ *     description="API documentation for TKK-Control"
  * )
- * 
  * @OA\Server(
  *     url="/api",
- *     description="API base URL"
+ *     description="API server"
  * )
  */
+class OpenApi
+{
+    // puede estar vacío
+}

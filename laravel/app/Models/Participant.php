@@ -11,8 +11,8 @@ class Participant extends Model
     public $incrementing = true;
 
     protected $fillable = [
-        'dni', 'first_name', 'last_name', 'phone', 'emergency_phone', 
-        'status', 'lunch_sandwich', 'dinner_sandwich'
+        'dni', 'first_name', 'last_name', 'phone', 'emergency_phone', 'gender','birth_date',
+        'status', 'lunch_sandwich', 'dinner_sandwich', 'shirt_size'
     ];
 
     public function checks(): HasMany

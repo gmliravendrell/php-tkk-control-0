@@ -1,136 +1,236 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard de Controles</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Dashboard - Controles</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-100 p-6">
+<body class="bg-light">
 
-<div class="max-w-5xl mx-auto space-y-6">
-    <h1 class="text-3xl font-bold text-gray-700">📊 Dashboard de Controles</h1>
+<div class="container my-5">
 
-    @foreach($controls as $control)
-        @php
-            // Definir texto, color y estado del botón
-            switch($control->status){
-                case 'preparing':
-                    $btnText = 'En preparación';
-                    $btnColor = 'bg-gray-400 cursor-not-allowed';
-                    $btnDisabled = 'disabled';
-                    $nextStatus = null;
-                    break;
-                case 'open_requested':
-                    $btnText = 'Autorizar Apertura';
-                    $btnColor = 'bg-gray-500 hover:bg-gray-600 cursor-pointer';
-                    $btnDisabled = '';
-                    $nextStatus = 'opened';
-                    break;
-                case 'opened':
-                    $btnText = 'Abierto';
-                    $btnColor = 'bg-green-500 cursor-not-allowed';
-                    $btnDisabled = 'disabled';
-                    $nextStatus = null;
-                    break;
-                case 'close_requested':
-                    $btnText = 'Autorizar Cierre';
-                    $btnColor = 'bg-amber-800 hover:bg-amber-900 cursor-pointer';
-                    $btnDisabled = '';
-                    $nextStatus = 'closed';
-                    break;
-                case 'closed':
-                    $btnText = 'Cerrado';
-                    $btnColor = 'bg-black cursor-not-allowed';
-                    $btnDisabled = 'disabled';
-                    $nextStatus = null;
-                    break;
-                default:
-                    $btnText = ucfirst($control->status);
-                    $btnColor = 'bg-gray-400';
-                    $btnDisabled = 'disabled';
-                    $nextStatus = null;
-            }
-        @endphp
-
-        <div class="bg-white p-4 rounded-xl shadow flex justify-between items-center space-x-4">
-            <div>
-                <h2 class="text-xl font-semibold">{{ $control->name }} (km {{ $control->km_point }})</h2>
-                <p>Responsable: {{ $control->responsable }} - Tel: {{ $control->phone }}</p>
-                <p>Estado: {{ ucfirst($control->status) }}</p>
-                <p>
-                    Apertura: {{ $control->opened_at ?? '—' }} |
-                    Cierre: {{ $control->closed_at ?? '—' }}
-                </p>
-                <p>
-                    Pasados: {{ $control->passed }} |
-                    Faltan: {{ $control->missing }} |
-                    Abandonos: {{ $control->abandoned }}
-                </p>
-            </div>
-
-            <div class="flex flex-col space-y-2">
-                <button 
-                    class="px-4 py-2 text-white rounded {{ $btnColor }}" 
-                    data-id="{{ $control->id }}" 
-                    data-next="{{ $nextStatus }}"
-                    {{ $btnDisabled }}>
-                    {{ $btnText }}
-                </button>
-
-                <!-- Aquí irá más adelante el gráfico de tarta -->
-                <canvas id="chart-{{ $control->id }}" width="200" height="200"></canvas>
-            </div>
+    <!-- Cabecera -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 fw-bold">📊 Panel de Control</h1>
+        <div class="d-flex gap-2">
+            <a href="/" class="btn btn-secondary">🏠 Menú principal</a>
+            <button class="btn btn-primary" onclick="refreshControls(true)">🔄 Actualizar</button>
         </div>
-    @endforeach
+    </div>
+
+    <!-- Tarjetas por control -->
+    <div class="row g-4 mb-4" id="cards-container"></div>
+
+    <!-- Gráfico global -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">Estado global de participantes</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="statusChart" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- Tabla detallada -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">Detalles por control</h5>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover align-middle" id="controlsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Control</th>
+                        <th>Pasados</th>
+                        <th>Abandonos</th>
+                        <th>Pendientes</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Toast Bootstrap -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+    <div id="mainToast" class="toast text-bg-success border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage">✅ Acción realizada</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Sonido alerta -->
+<audio id="alertSound">
+    <source src="data:audio/wav;base64,UklGRhYAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQYAAAAA" type="audio/wav">
+</audio>
+
 <script>
-document.querySelectorAll('button[data-id]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const next = btn.dataset.next;
+let chart; // gráfico global
+let perControlCharts = {}; // gráficos individuales
+let lastAbandonedTotal = 0; // Para detectar incrementos
 
-        if(!next) return; // Si no hay siguiente estado, no hace nada
+// Renderiza los controles en cards + tabla
+function renderControls(controls) {
+    const cardsContainer = document.getElementById('cards-container');
+    const tbody = document.querySelector('#controlsTable tbody');
+    cardsContainer.innerHTML = '';
+    tbody.innerHTML = '';
 
-        try {
-            const res = await fetch(`/api/controls/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: next })
-            });
+    let totalPassed = 0, totalAbandoned = 0, totalMissing = 0;
 
-            if(res.ok){
-                const data = await res.json();
-                alert(`Control ${data.control.name} actualizado a: ${next}!`);
-                location.reload();
-            } else {
-                const err = await res.json();
-                alert(err.error);
-            }
-        } catch(e){
-            console.error(e);
-            alert('Error al actualizar el control');
-        }
+    controls.forEach(c => {
+        totalPassed += c.passed;
+        totalAbandoned += c.abandoned;
+        totalMissing += c.missing;
+
+        const chartId = `chart-control-${c.id}`;
+
+        // Cards con gráfico
+        cardsContainer.innerHTML += `
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">${c.name}</h5>
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-1">✅ Pasados: <b>${c.passed}</b></p>
+                                <p class="mb-1">❌ Abandonos: <b>${c.abandoned}</b></p>
+                                <p class="mb-1">⏳ Pendientes: <b>${c.missing}</b></p>
+                            </div>
+                            <div class="ms-auto" style="width:120px; height:120px">
+                                <canvas id="${chartId}"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Tabla
+        tbody.innerHTML += `
+            <tr>
+                <td>${c.name}</td>
+                <td>${c.passed}</td>
+                <td>${c.abandoned}</td>
+                <td>${c.missing}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="updateControl(${c.id}, 'passed')">+ Pasado</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="updateControl(${c.id}, 'abandoned')">+ Abandono</button>
+                </td>
+            </tr>
+        `;
+
+        // Renderizar gráfico individual
+        setTimeout(() => renderControlChart(chartId, c), 0);
     });
-});
 
-// Graficar con Chart.js
-@foreach($controls as $control)
-    const ctx{{ $control->id }} = document.getElementById('chart-{{ $control->id }}').getContext('2d');
-    new Chart(ctx{{ $control->id }}, {
+    // Detectar si aumentaron los abandonos
+    if (totalAbandoned > lastAbandonedTotal) {
+        playAlert();
+    }
+    lastAbandonedTotal = totalAbandoned;
+
+    // Actualiza gráfico global
+    renderChart(totalPassed, totalAbandoned, totalMissing);
+}
+
+// Renderiza gráfico global
+function renderChart(passed, abandoned, missing) {
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Faltan', 'Pasados', 'Abandonos'],
+            labels: ['Pasados', 'Abandonos', 'Pendientes'],
             datasets: [{
-                data: [{{ $control->missing }}, {{ $control->passed }}, {{ $control->abandoned }}],
-                backgroundColor: ['#f59e0b', '#10b981', '#ef4444']
+                data: [passed, abandoned, missing],
+                backgroundColor: ['#28a745', '#dc3545', '#ffc107']
             }]
         },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        options: { plugins: { legend: { position: 'bottom' } } }
     });
-@endforeach
+}
+
+// Renderiza gráfico individual
+function renderControlChart(chartId, control) {
+    const ctx = document.getElementById(chartId);
+    if (!ctx) return;
+
+    if (perControlCharts[chartId]) {
+        perControlCharts[chartId].destroy();
+    }
+
+    perControlCharts[chartId] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pasados', 'Abandonos', 'Pendientes'],
+            datasets: [{
+                data: [control.passed, control.abandoned, control.missing],
+                backgroundColor: ['#28a745', '#dc3545', '#ffc107']
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            cutout: '70%'
+        }
+    });
+}
+
+// Llama a la API para obtener los datos
+async function refreshControls(manual = false) {
+    try {
+        const res = await fetch('/api/controls');
+        const data = await res.json();
+        renderControls(data);
+        if (manual) showToast('🔄 Datos actualizados', 'info');
+    } catch (err) {
+        showToast('❌ Error al cargar los datos', 'danger');
+    }
+}
+
+// Llama a la API para actualizar un control
+async function updateControl(id, action) {
+    try {
+        const res = await fetch(`/api/controls/${id}/${action}`, { method: 'POST' });
+        if (res.ok) {
+            showToast('✅ Actualización correcta', 'success');
+            refreshControls();
+        } else {
+            showToast('❌ Error al actualizar', 'danger');
+        }
+    } catch {
+        showToast('❌ Error de red', 'danger');
+    }
+}
+
+// Toast bonito con Bootstrap
+function showToast(msg, type='success') {
+    const toastEl = document.getElementById('mainToast');
+    const toastBody = document.getElementById('toastMessage');
+    toastBody.textContent = msg;
+    toastEl.className = `toast text-bg-${type} border-0`;
+    new bootstrap.Toast(toastEl).show();
+}
+
+// Reproduce sonido alerta
+function playAlert() {
+    const audio = document.getElementById('alertSound');
+    audio.play();
+}
+
+// Cargar al inicio con polling
+document.addEventListener('DOMContentLoaded', () => {
+    refreshControls();
+    setInterval(refreshControls, 10000); // cada 10s
+});
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

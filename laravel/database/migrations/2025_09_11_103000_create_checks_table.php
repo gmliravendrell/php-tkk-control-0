@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->timestamp('checked_at')->useCurrent();
             $table->enum('type', ['check','abandon']);
             $table->timestamps();
+             $table->unique(['control_id', 'participant_id','type'], 'unique_control_participant');
         });
     }
 

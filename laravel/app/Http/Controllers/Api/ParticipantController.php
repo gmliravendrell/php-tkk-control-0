@@ -7,10 +7,15 @@
  * )
  */
 namespace App\Http\Controllers\Api;
-
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use App\Models\Participant;
+use App\Models\Check;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Control;
+
 
 class ParticipantController extends Controller
 {
@@ -63,8 +68,8 @@ class ParticipantController extends Controller
      *             @OA\Property(property="phone", type="string", example="+34123456789"),
      *             @OA\Property(property="emergency_phone", type="string", example="+34987654321"),
      *             @OA\Property(property="status", type="string", enum={"not_presented","presented","abandoned","finished"}, example="presented"),
-     *             @OA\Property(property="lunch_sandwich", type="boolean", example=true),
-     *             @OA\Property(property="dinner_sandwich", type="boolean", example=false)
+     *             @OA\Property(property="lunch_sandwich", type="string", example=true),
+     *             @OA\Property(property="dinner_sandwich", type="string", example=false)
      *         )
      *     ),
      *     @OA\Response(
@@ -159,44 +164,66 @@ class ParticipantController extends Controller
      *     @OA\Response(response=400, description="Invalid file")
      * )
      */
-        public function import(Request $request)
-    {
-        $request->validate(['csv' => 'required|file|mimes:csv,txt']);
-        DB::table('checks')->truncate();
+public function import(Request $request)
+{
+    Log::info('Importing participants with and csv file');
 
-        $file = $request->file('csv');
-        $rows = array_map('str_getcsv', file($file->getRealPath()));
-        $header = array_shift($rows);
+    $request->validate([
+        'csv' => 'required|file|mimes:csv,txt'
+    ]);
+    Log::warning('Disabling foreing keys for data truncation');
+    DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+    Check::truncate();
+    Participant::truncate();
+    DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+    Log::warning('Data truncated, enabling foreign keys');
 
-        $added = 0;
-        $errors = [];
+    $file = $request->file('csv');
+    $rows = array_map('str_getcsv', file($file->getRealPath()));
+    $header = array_shift($rows);
 
-        foreach ($rows as $index => $row) {
-            $data = array_combine($header, $row);
+    $added = 0;
+    $errors = [];
 
-            $validator = Validator::make($data, [
-                'first_name' => 'required|string',
-                'last_name' => 'required|string',
-                'dni' => 'nullable|string',
-                'phone' => 'nullable|string',
-                'emergency_phone' => 'nullable|string',
-                'status' => 'nullable|in:not_presented,presented,abandoned,finished',
-                'lunch_sandwich' => 'nullable|boolean',
-                'dinner_sandwich' => 'nullable|boolean'
-            ]);
+    foreach ($rows as $index => $row) {
+        $data = array_combine($header, $row);
 
-            if ($validator->fails()) {
-                $errors[$index + 1] = $validator->errors()->all();
-                continue;
-            }
+        $validator = Validator::make($data, [
+            'first_name'      => 'required|string',
+            'last_name'       => 'required|string',
+            'dni'             => 'nullable|string',
+            'phone'           => 'nullable|string',
+            'emergency_phone' => 'nullable|string',
+            'status'          => 'nullable|in:not_presented,presented,abandoned,finished',
+            'lunch_sandwich'  => 'nullable|string',
+            'dinner_sandwich' => 'nullable|string'
+        ]);
 
-            Participant::create($data);
-            $added++;
+        if ($validator->fails()) {
+            $errors[$index + 2] = $validator->errors()->all();
+            continue;
         }
 
-        return response()->json([
-            'added' => $added,
-            'errors' => $errors
-        ]);
+        try {
+            Participant::create($data);
+            $added++;
+        } catch (\Exception $e) {
+            Log::error('Error creating participant with data: ' . $data);
+            Log::error('The provided error is' . $e->getMessage());
+            $errors[$index + 2] = ["Error al guardar en la BD: " . $e->getMessage()];
+        }
     }
+
+    // 🔹 Actualizamos todos los controles con los nuevos contadores
+    foreach (Control::all() as $control) {
+        Log::info("Reseting counters for control " . $control);
+        $control->resetCounters($added);
+    }
+
+    return response()->json([
+        'added'  => $added,
+        'errors' => $errors
+    ]);
+}
+
 }

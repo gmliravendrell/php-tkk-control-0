@@ -10,9 +10,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Control;
+use App\Models\Check;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class ControlController extends Controller
 {
@@ -190,36 +193,86 @@ class ControlController extends Controller
     {
         $request->validate(['csv' => 'required|file|mimes:csv,txt']);
 
-        $file = $request->file('csv');
-        $rows = array_map('str_getcsv', file($file->getRealPath()));
-        $header = array_shift($rows);
+        $file   = $request->file('csv');
+        $rows   = array_map('str_getcsv', file($file->getRealPath()));
+        $header = array_map('trim', array_shift($rows));
 
-        $added = 0;
-        $errors = [];
+        $errors     = [];
+        $validRows  = [];
+        $hasStart   = false;
 
+        // 🔎 Primera pasada: validar datos sin tocar BD
         foreach ($rows as $index => $row) {
-            $data = array_combine($header, $row);
+            $data = @array_combine($header, $row);
 
-            $validator = Validator::make($data, [
-                'name' => 'required|string',
-                'km_point' => 'required|numeric',
-                'responsible' => 'nullable|string',
-                'phone' => 'nullable|string',
-                'status' => 'nullable|in:preparing,open_requested,opened,close_requested,closed'
-            ]);
-
-            if ($validator->fails()) {
-                $errors[$index + 1] = $validator->errors()->all();
+            if ($data === false) {
+                $errors[$index + 2] = ["Número de columnas inválido en la fila"];
                 continue;
             }
 
-            Control::create($data);
-            $added++;
+            $validator = \Validator::make($data, [
+                'name'        => 'required|string',
+                'km_point'    => 'required|numeric',
+                'responsible' => 'nullable|string',
+                'phone'       => 'nullable|string',
+                'status'      => 'nullable|in:preparing,open_requested,opened,close_requested,closed',
+            ]);
+
+            if ($validator->fails()) {
+                $errors[$index + 2] = $validator->errors()->all();
+                continue;
+            }
+
+            if ((float)$data['km_point'] === 0.0) {
+                $hasStart = true;
+            }
+
+            $validRows[] = $data;
+        }
+
+        // 🚨 Si hubo errores o falta km_point = 0, abortamos
+        if (!empty($errors)) {
+            \Log::warning('Errores en importación de CSV', $errors);
+            return response()->json([
+                'added'  => 0,
+                'errors' => $errors,
+            ], 422);
+        }
+
+        if (!$hasStart) {
+            return response()->json([
+                'added'  => 0,
+                'errors' => ['El archivo CSV debe contener al menos un control con km_point = 0'],
+            ], 422);
+        }
+
+        // ✅ Reordenamos por km_point para asignar los tipos
+        usort($validRows, fn($a, $b) => (float)$a['km_point'] <=> (float)$b['km_point']);
+
+        foreach ($validRows as $i => &$row) {
+            if ($i === 0) {
+                $row['type'] = 'start';
+            } elseif ($i === count($validRows) - 1) {
+                $row['type'] = 'finish';
+            } else {
+                $row['type'] = 'control';
+            }
+        }
+        unset($row);
+
+        // ✅ Si todo va bien, ahora sí limpiamos y grabamos
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Control::truncate();
+        Check::truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        foreach ($validRows as $row) {
+            Control::create($row);
         }
 
         return response()->json([
-            'added' => $added,
-            'errors' => $errors
+            'added'  => count($validRows),
+            'errors' => [],
         ]);
     }
 

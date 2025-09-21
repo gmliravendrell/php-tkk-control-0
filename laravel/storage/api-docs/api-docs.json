@@ -1,0 +1,738 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "TKK Control API",
+        "description": "API documentation for TKK-Control",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api",
+            "description": "API server"
+        }
+    ],
+    "paths": {
+        "/api/checks": {
+            "post": {
+                "tags": [
+                    "Checks"
+                ],
+                "summary": "Register a check or dropout at a control",
+                "description": "Creates a record of passage (check) or dropout for a participant at a specific control.",
+                "operationId": "36827b3a46d057db7a74ed7237d2bec8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "control_id",
+                                    "participant_id",
+                                    "type"
+                                ],
+                                "properties": {
+                                    "control_id": {
+                                        "description": "ID of the control",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "participant_id": {
+                                        "description": "ID of the participant",
+                                        "type": "integer",
+                                        "example": 10
+                                    },
+                                    "type": {
+                                        "description": "Type of record",
+                                        "type": "string",
+                                        "enum": [
+                                            "check",
+                                            "abandon"
+                                        ],
+                                        "example": "check"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Record successfully created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Checked successfully"
+                                        },
+                                        "check": {
+                                            "description": "Created record data",
+                                            "type": "object"
+                                        },
+                                        "control": {
+                                            "description": "Updated control state",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or duplicate record",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "This participant already has a 'check' record at this control."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Control or participant not found"
+                    }
+                }
+            }
+        },
+        "/api/controls/{control}/checks": {
+            "get": {
+                "tags": [
+                    "Checks"
+                ],
+                "summary": "Get participants who checked at a control",
+                "description": "Returns the list of participants who have passed a given control, ordered by timestamp descending.",
+                "operationId": "22cf1c42f426f6864e9c85aaf09909cb",
+                "parameters": [
+                    {
+                        "name": "control",
+                        "in": "path",
+                        "description": "ID of the control",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of participants who passed the control",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "dorsal": {
+                                                "type": "integer",
+                                                "example": 23
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Maria López"
+                                            },
+                                            "checked_at": {
+                                                "type": "string",
+                                                "example": "2025-09-21 09:30:00"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/checks/abandons": {
+            "get": {
+                "tags": [
+                    "Checks"
+                ],
+                "summary": "Get participants who abandoned",
+                "description": "Returns the list of participants who have abandoned at any control, including the control name.",
+                "operationId": "455b15712aee1978d6aa73dac65af128",
+                "responses": {
+                    "200": {
+                        "description": "List of participants who abandoned",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "dorsal": {
+                                                "type": "integer",
+                                                "example": 42
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "example": "Carlos Martínez"
+                                            },
+                                            "checked_at": {
+                                                "type": "string",
+                                                "example": "2025-09-21 10:15:00"
+                                            },
+                                            "control": {
+                                                "type": "string",
+                                                "example": "Avituallamiento 2 - KM 15"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/controls": {
+            "get": {
+                "tags": [
+                    "Controls"
+                ],
+                "summary": "Get all controls",
+                "operationId": "c77f525a2a1446577d038002698a65bf",
+                "responses": {
+                    "200": {
+                        "description": "List of controls",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Controls"
+                ],
+                "summary": "Create a new control",
+                "operationId": "049b68992d9cbcb1ba1db2510ab39199",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "km_point"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "CP1"
+                                    },
+                                    "km_point": {
+                                        "type": "number",
+                                        "example": 12.5
+                                    },
+                                    "responsible": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "+34123456789"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "preparing",
+                                            "open_requested",
+                                            "opened",
+                                            "close_requested",
+                                            "closed"
+                                        ],
+                                        "example": "preparing"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Control created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/controls/{id}": {
+            "get": {
+                "tags": [
+                    "Controls"
+                ],
+                "summary": "Get a control by ID",
+                "operationId": "814fb0a47f987c12d3e2f7b9f0612017",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Control ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Control details with relations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Control not found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Controls"
+                ],
+                "summary": "Update a control status",
+                "description": "Update the status of a control with allowed state transitions.",
+                "operationId": "3014109f4371432ca4cffeab11e7c709",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Control ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "preparing",
+                                            "open_requested",
+                                            "opened",
+                                            "close_requested",
+                                            "closed"
+                                        ],
+                                        "example": "open_requested"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid state transition"
+                    },
+                    "404": {
+                        "description": "Control not found"
+                    }
+                }
+            }
+        },
+        "/api/admin/controls/import": {
+            "post": {
+                "tags": [
+                    "Controls"
+                ],
+                "summary": "Import controls from CSV",
+                "description": "Upload a CSV file to import multiple controls.",
+                "operationId": "de1b593aef4a200686c9c4798fe7aef0",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "csv"
+                                ],
+                                "properties": {
+                                    "csv": {
+                                        "description": "CSV file with controls",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Import result with added count and errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "added": {
+                                            "type": "integer",
+                                            "example": 5
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid file"
+                    }
+                }
+            }
+        },
+        "/api/participants": {
+            "get": {
+                "tags": [
+                    "Participants"
+                ],
+                "summary": "Get all participants",
+                "operationId": "b56cc0b1479de99c053898dea57d2a59",
+                "responses": {
+                    "200": {
+                        "description": "List of participants",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Participants"
+                ],
+                "summary": "Create a new participant",
+                "operationId": "700a91d1e48b221e6d27eb86f50a4dc7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "first_name",
+                                    "last_name"
+                                ],
+                                "properties": {
+                                    "first_name": {
+                                        "type": "string",
+                                        "example": "John"
+                                    },
+                                    "last_name": {
+                                        "type": "string",
+                                        "example": "Doe"
+                                    },
+                                    "dni": {
+                                        "type": "string",
+                                        "example": "12345678A"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "+34123456789"
+                                    },
+                                    "emergency_phone": {
+                                        "type": "string",
+                                        "example": "+34987654321"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "not_presented",
+                                            "presented",
+                                            "abandoned",
+                                            "finished"
+                                        ],
+                                        "example": "presented"
+                                    },
+                                    "lunch_sandwich": {
+                                        "type": "string",
+                                        "example": true
+                                    },
+                                    "dinner_sandwich": {
+                                        "type": "string",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Participant created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/api/participants/{id}": {
+            "get": {
+                "tags": [
+                    "Participants"
+                ],
+                "summary": "Get a participant by ID",
+                "operationId": "022e40e8979c7d7a7f156a8c80aeaa5f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Participant ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Participant details with related checks",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Participant not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Participants"
+                ],
+                "summary": "Update a participant",
+                "operationId": "c42492b70d7706860bae3c7f4966cfa4",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Participant ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "first_name": {
+                                        "type": "string",
+                                        "example": "Jane"
+                                    },
+                                    "last_name": {
+                                        "type": "string",
+                                        "example": "Smith"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "not_presented",
+                                            "presented",
+                                            "abandoned",
+                                            "finished"
+                                        ],
+                                        "example": "finished"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Participant updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Participant not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Participants"
+                ],
+                "summary": "Delete a participant",
+                "operationId": "2a2003f3c1c8a6b6164344f3bd5085ce",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Participant ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Participant deleted"
+                    },
+                    "404": {
+                        "description": "Participant not found"
+                    }
+                }
+            }
+        },
+        "/api/admin/participants/import": {
+            "post": {
+                "tags": [
+                    "Participants"
+                ],
+                "summary": "Import participants from CSV",
+                "description": "Upload a CSV file to import multiple participants. Existing checks are truncated.",
+                "operationId": "8ee236debdac3c7ead030924002d73a3",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "csv"
+                                ],
+                                "properties": {
+                                    "csv": {
+                                        "description": "CSV file with participants",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Import result with added count and errors",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "added": {
+                                            "type": "integer",
+                                            "example": 20
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid file"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Checks",
+            "description": "Checks"
+        },
+        {
+            "name": "Controls",
+            "description": "Controls"
+        },
+        {
+            "name": "Participants",
+            "description": "Participants"
+        }
+    ]
+}

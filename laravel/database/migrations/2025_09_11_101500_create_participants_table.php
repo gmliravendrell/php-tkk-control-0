@@ -9,14 +9,17 @@ return new class extends Migration {
     {
         Schema::create('participants', function (Blueprint $table) {
             $table->id(); // will be dorsal
-            $table->string('dni')->nullable();
+            $table->string('dni')->unique()->nullable(false);
             $table->string('first_name');
             $table->string('last_name');
             $table->string('phone')->nullable();
             $table->string('emergency_phone')->nullable();
+            $table->enum('gender', ['male','female'])->default('female');
+            $table->date('birth_date');
             $table->enum('status', ['not_presented','presented','abandoned','finished'])->default('not_presented');
-            $table->boolean('lunch_sandwich')->default(false);
-            $table->boolean('dinner_sandwich')->default(false);
+            $table->string('lunch_sandwich')->nullable();
+            $table->string('dinner_sandwich')->nullable();
+            $table->enum('shirt_size',['XXS','XS','S','M','L','XL','XXL','XXXL'])->nullable();
             $table->timestamps();
         });
     }

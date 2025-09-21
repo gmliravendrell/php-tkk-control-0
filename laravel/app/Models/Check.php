@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Check extends Model
 {
     protected $fillable = [
-        'control_id', 'participant_id', 'type', 'timestamp'
+        'control_id', 'participant_id', 'type', 'checked_at'
     ];
 
     public function participant(): BelongsTo

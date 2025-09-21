@@ -1,139 +1,206 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Control {{ $control->name }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 p-6">
+<body class="bg-light">
 
-<div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow space-y-4">
-    <h1 class="text-2xl font-bold">📍 Control: {{ $control->name }}</h1>
-
-    <p><strong>Distancia desde meta:</strong> {{ $control->km_point }}</p>
-    <p><strong>Responsable:</strong> {{ $control->responsable }}</p>
-    <p><strong>Teléfono:</strong> {{ $control->phone }}</p>
-    <p><strong>Estado:</strong> {{ ucfirst($control->status) }}</p>
-
-    <div id="controlActions" class="mt-4 space-y-2">
-        <!-- Los botones se inyectarán aquí vía JS -->
+<!-- Barra superior -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="{{ route('control.index') }}">⬅ Menú Principal</a>
+        <span class="navbar-text ms-auto">
+            📍 {{ $control->name }} — 👤 {{ $control->responsible }} (📞 {{ $control->phone }})
+        </span>
     </div>
-    <a href="{{ route('scanner.index', $control->id) }}" class="btn btn-secondary">
-        📷 Escanear QR
-    </a>
-    <a href="{{ route('control.index') }}" class="inline-block mt-4 text-blue-600 hover:underline">⬅ Cambiar de Control</a>
+</nav>
+
+<div class="container">
+
+    <!-- Barra de progreso -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Progreso del control</h5>
+            <div class="progress mb-2" style="height: 25px;">
+                <div id="progressPassed" class="progress-bar bg-success" role="progressbar"></div>
+                <div id="progressMissing" class="progress-bar bg-warning" role="progressbar"></div>
+                <div id="progressAbandoned" class="progress-bar bg-danger" role="progressbar"></div>
+            </div>
+            <p class="mb-0 text-muted" id="progressText"></p>
+        </div>
+    </div>
+
+    <!-- Formulario de dorsal -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Registrar dorsal</h5>
+            <div class="input-group mb-3">
+                <input type="number" id="dorsalInput" class="form-control" placeholder="Número de dorsal">
+                <button class="btn btn-success" id="btnCheck">✔️ Marcar</button>
+                <button class="btn btn-danger" id="btnAbandon">🚨 Abandonar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón de escaneo -->
+    <div class="d-grid mb-4">
+        <a href="{{ route('scanner.index', $control->id) }}" class="btn btn-secondary btn-lg">
+            📷 Escanear QR
+        </a>
+    </div>
+
+    <!-- Acordeón -->
+    <div class="accordion mb-4" id="accordionParticipants">
+
+        <!-- Pasados -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingPassed">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePassed">
+                    ✅ Participantes que han pasado
+                </button>
+            </h2>
+            <div id="collapsePassed" class="accordion-collapse collapse show" data-bs-parent="#accordionParticipants">
+                <div class="accordion-body" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Dorsal</th>
+                                <th>Nombre</th>
+                                <th>Hora de paso</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablePassed"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Abandonos -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingAbandoned">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAbandoned">
+                    🚨 Abandonos
+                </button>
+            </h2>
+            <div id="collapseAbandoned" class="accordion-collapse collapse" data-bs-parent="#accordionParticipants">
+                <div class="accordion-body" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Dorsal</th>
+                                <th>Nombre</th>
+                                <th>Hora</th>
+                                <th>Control</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableAbandoned"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
 const controlId = {{ $control->id }};
-const controlStatus = "{{ $control->status }}";
-const passed = {{ $control->passed ?? 0 }};
-const missing = {{ $control->missing ?? 0 }};
-const abandoned = {{ $control->abandoned ?? 0 }};
+const csrfToken = '{{ csrf_token() }}';
 
-const actionsDiv = document.getElementById('controlActions');
+// Render barra progreso
+function renderProgress(passed, missing, abandoned) {
+    const total = passed + missing + abandoned;
+    const totalSinAbandonos = total - abandoned;
 
-function createButton(text, color, onClick, disabled=false) {
-    const btn = document.createElement('button');
-    btn.textContent = text;
-    btn.className = `px-4 py-2 text-white rounded ${color} hover:opacity-80`;
-    btn.disabled = disabled;
-    btn.addEventListener('click', onClick);
-    return btn;
+    const pctPassed = totalSinAbandonos > 0 ? (passed / totalSinAbandonos) * 100 : 0;
+    const pctMissing = totalSinAbandonos > 0 ? (missing / totalSinAbandonos) * 100 : 0;
+    const pctAbandoned = total > 0 ? (abandoned / total) * 100 : 0;
+
+    document.getElementById("progressPassed").style.width = pctPassed + "%";
+    document.getElementById("progressMissing").style.width = pctMissing + "%";
+    document.getElementById("progressAbandoned").style.width = pctAbandoned + "%";
+
+    document.getElementById("progressPassed").textContent = Math.round(pctPassed) + "%";
+    document.getElementById("progressMissing").textContent = Math.round(pctMissing) + "%";
+    document.getElementById("progressAbandoned").textContent = Math.round(pctAbandoned) + "%";
+
+    document.getElementById("progressText").textContent =
+        `✅ Pasados: ${passed} · ⏳ Pendientes: ${missing} · 🚨 Abandonos: ${abandoned}`;
 }
 
-async function updateControlStatus(newStatus) {
-    const res = await fetch(`/api/controls/${controlId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({ status: newStatus })
-    });
-    const data = await res.json();
-    if(res.ok) {
-        alert('Estado actualizado con éxito');
-    } else {
-        alert(data.message || 'Error al actualizar estado');
+// Render tablas
+function renderTables(passedList, abandonedList) {
+    const tablePassed = document.getElementById("tablePassed");
+    const tableAbandoned = document.getElementById("tableAbandoned");
+
+    tablePassed.innerHTML = passedList
+        .sort((a, b) => new Date(b.checked_at) - new Date(a.checked_at))
+        .map(p => `<tr><td>${p.dorsal}</td><td>${p.name}</td><td>${p.checked_at}</td></tr>`)
+        .join("");
+
+    tableAbandoned.innerHTML = abandonedList
+        .map(p => `<tr><td>${p.dorsal}</td><td>${p.name}</td><td>${p.checked_at}</td><td>${p.control}</td></tr>`)
+        .join("");
+}
+
+// Refrescar datos
+async function refreshControl() {
+    try {
+        // Estado del control
+        const resStatus = await fetch(`/api/controls/${controlId}`);
+        const statusData = await resStatus.json();
+        renderProgress(statusData.passed, statusData.missing, statusData.abandoned);
+
+        // Lista de pasados
+        const resChecks = await fetch(`/api/controls/${controlId}/checks`);
+        const passedList = await resChecks.json();
+
+        // Lista de abandonos global
+        const resAbandons = await fetch(`/api/checks/abandons`);
+        const abandonedList = await resAbandons.json();
+
+        renderTables(passedList, abandonedList);
+
+    } catch (e) {
+        console.error("Error al refrescar", e);
     }
 }
 
-// Generamos los botones según el estado
-if(controlStatus === 'preparing') {
-    const btn = createButton('Solicitar Apertura', 'bg-blue-600', () => updateControlStatus('open_requested'));
-    actionsDiv.appendChild(btn);
+// Marcar acción
+async function sendCheck(type) {
+    const dorsal = document.getElementById("dorsalInput").value;
+    if (!dorsal) return alert("Introduce dorsal");
 
-} else if(controlStatus === 'open_requested') {
-    const btn = createButton('Esperando autorización', 'bg-gray-600', () => {}, true);
-    actionsDiv.appendChild(btn);
-
-} else if(controlStatus === 'opened') {
-    actionsDiv.innerHTML = `
-        <p><strong>Pasados:</strong> ${passed}</p>
-        <p><strong>Faltan:</strong> ${missing}</p>
-        <p><strong>Abandonos:</strong> ${abandoned}</p>
-        <div class="flex space-x-2 mt-2">
-            <input type="number" placeholder="Dorsal" id="dorsalInput" class="border p-2 rounded">
-        </div>
-    `;
-
-    // Check
-    const checkBtn = createButton('✔️ Check', 'bg-green-500', async () => {
-        const dorsal = document.getElementById('dorsalInput').value;
-        if(!dorsal) return alert('Introduce dorsal');
-        const res = await fetch(`/api/checks`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ control_id: controlId, participant_id: dorsal, type: 'check' })
-        });
-        const data = await res.json();
-        if(res.ok) {
-            alert('Marcado correctamente');
-            location.reload();
-        } else {
-            alert(data.message || 'Error al marcar');
-        }
+    const res = await fetch(`/api/checks`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-CSRF-TOKEN": csrfToken
+        },
+        body: JSON.stringify({ control_id: controlId, participant_id: dorsal, type })
     });
-
-    // Abandon
-    const abandonBtn = createButton('🚨 Abandon', 'bg-red-500', async () => {
-        const dorsal = document.getElementById('dorsalInput').value;
-        if(!dorsal) return alert('Introduce dorsal');
-        const res = await fetch(`/api/checks`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ control_id: controlId, participant_id: dorsal, type: 'abandon' })
-        });
-        const data = await res.json();
-        if(res.ok) {
-            alert('Abandono registrado');
-            location.reload();
-        } else {
-            alert(data.message || 'Error al marcar abandono');
-        }
-    });
-
-    // Close Control
-    const closeBtn = createButton('Cerrar Control', 'bg-gray-700', () => updateControlStatus('close_requested'), missing > 0);
-
-    actionsDiv.appendChild(checkBtn);
-    actionsDiv.appendChild(abandonBtn);
-    actionsDiv.appendChild(closeBtn);
-
-} else if(controlStatus === 'closed') {
-    actionsDiv.innerHTML = `<p>Control cerrado. ✅ Pasados: ${passed}, 🚨 Abandonos: ${abandoned}</p>`;
+    const data = await res.json();
+    if (res.ok) {
+        alert(type === "check" ? "Marcado correctamente" : "Abandono registrado");
+        refreshControl();
+    } else {
+        alert(data.error || "Error");
+    }
 }
+
+// Botones
+document.getElementById("btnCheck").addEventListener("click", () => sendCheck("check"));
+document.getElementById("btnAbandon").addEventListener("click", () => sendCheck("abandon"));
+
+// Inicial + polling
+document.addEventListener("DOMContentLoaded", () => {
+    refreshControl();
+    setInterval(refreshControl, 180000); // 3 minutos
+});
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
