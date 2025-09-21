@@ -245,6 +245,8 @@ document.addEventListener("DOMContentLoaded", () => {
         loadRecent();
         alert("Dorsal entregado ✅");
         renderParticipant(currentParticipant);
+        dorsalInput.value = "";
+        dorsalInput.focus();
     });
 
     // Marcar abandono
@@ -271,6 +273,8 @@ document.addEventListener("DOMContentLoaded", () => {
         loadRecent();
         alert("Marcado como abandonado ❌");
         renderParticipant(currentParticipant);
+        dorsalInput.value = "";
+        dorsalInput.focus();
     });
 
     async function refreshProgress() {

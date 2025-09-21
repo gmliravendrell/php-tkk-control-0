@@ -120,12 +120,16 @@ class CheckController extends Controller
             }
 
         } elseif ($validated['type'] === 'abandon') {
-            $control->abandoned++;
-            $control->missing = max(0, $control->missing - 1);
-
             // 2️⃣ Actualizar estado del participante a abandon
             $participant->status = 'abandoned';
             $participant->save();
+                // 2️⃣ Actualizar abandonos en TODOS los controles
+            $allControls = Control::all();
+            foreach ($allControls as $c) {
+                $c->abandoned++;
+                $c->missing = max(0, $c->missing - 1);
+                $c->save();
+            }
         }
 
         $control->save();
